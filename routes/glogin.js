@@ -1,14 +1,10 @@
 const { google } = require('googleapis');
-var express = require('express');
-const { logging } = require('googleapis/build/src/apis/logging');
-const { Client } = require("pg")
-const dotenv = require("dotenv")
-dotenv.config()
-var router = express.Router();
+const express = require('express');
+const { Client } = require("pg");
+const dotenv = require("dotenv");
+dotenv.config();
+const router = express.Router();
 
-const gitClientId = 'Ov23liVDoUk6114fGsAy';
-const gitClientSecret = '3b98c6bf5b82dbe0ccef8b991b04222530a99e50';
-    
 /* GET home page. */
 router.get('/', async (req, res) => {
     if (!req.app.locals.authed) {
@@ -35,22 +31,21 @@ router.get('/', async (req, res) => {
                         const client = new Client({
                             host: process.env.PGHOST,
                             database: process.env.PGDATABASE,
-                            username: process.env.PGUSER,
+                            user: process.env.PGUSER,
                             password: process.env.PGPASSWORD,
-                            port: 5432,
-                            ssl: 'require',
-                            connection: {
-                                options: `project=${process.env.ENDPOINT_ID}`,
+                            port: process.env.PGPORT,
+                            ssl: {
+                                rejectUnauthorized: false, // tylko w środowisku developmentu
                             }
                         });
 
                         await client.connect();
-                        const result2 = await client.query("SELECT * FROM public.users");
+                        const result2 = await client.query("SELECT * FROM users"); 
                         await client.end();
 
                         return result2.rows;
                     } catch (error) {
-                        console.log(error);
+                        console.error("Error connecting/querying PostgreSQL database:", error);
                         return [];
                     }
                 };
@@ -67,22 +62,22 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/auth/google/callback', function (req, res) {
-  const code = req.query.code;
-  if (code) {
-      // Get an access token based on our OAuth code
-      req.app.locals.oAuth2Client.getToken(code, function (err, tokens) {
-          if (err) {
-              console.log('Error authenticating');
-              console.log(err);
-              res.send('Error during authentication');
-          } else {
-              console.log('Successfully authenticated');
-              req.app.locals.oAuth2Client.setCredentials(tokens);
-              req.app.locals.authed = true;
-              res.redirect('/glogin');
-          }
-      });
-  }
+    const code = req.query.code;
+    if (code) {
+        // Get an access token based on our OAuth code
+        req.app.locals.oAuth2Client.getToken(code, function (err, tokens) {
+            if (err) {
+                console.log('Error authenticating');
+                console.log(err);
+                res.send('Error during authentication');
+            } else {
+                console.log('Successfully authenticated');
+                req.app.locals.oAuth2Client.setCredentials(tokens);
+                req.app.locals.authed = true;
+                res.redirect('/glogin');
+            }
+        });
+    }
 });
 
 router.get('/logout', (req, res) => {
@@ -92,12 +87,8 @@ router.get('/logout', (req, res) => {
             res.send('Error during logout');
         } else {
             console.log('Credentials revoked successfully.');
-            req.app.locals.authed = false; // Ustawienie authed na false po wylogowaniu
-            
-            // Wyczyść sesję przeglądarki
+            req.app.locals.authed = false;
             req.session = null;
-            
-            // Wyślij żądanie do wylogowania się z Google
             res.redirect('/');
         }
     });
