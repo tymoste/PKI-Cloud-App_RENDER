@@ -33,14 +33,14 @@ router.get('/', async (req, res) => {
                 const connectDB = async () => {
                     try {
                         const client = new Client({
-                            host: PGHOST,
-                            database: PGDATABASE,
-                            username: PGUSER,
-                            password: PGPASSWORD,
+                            host: process.env.PGHOST,
+                            database: process.env.PGDATABASE,
+                            username: process.env.PGUSER,
+                            password: process.env.PGPASSWORD,
                             port: 5432,
                             ssl: 'require',
                             connection: {
-                                options: `project=${ENDPOINT_ID}`,
+                                options: `project=${process.env.ENDPOINT_ID}`,
                             }
                         });
 
