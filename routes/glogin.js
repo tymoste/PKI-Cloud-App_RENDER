@@ -40,6 +40,15 @@ router.get('/', async (req, res) => {
                         });
 
                         await client.connect();
+
+                        const now = new Date().toISOString();
+
+                        const userQuery = await client.query('SELECT * FROM users WHERE name = $1', [loggedUser]);
+                        if (userQuery.rows.length === 0) {
+                            await client.query('INSERT INTO users (name, joined, lastvisit, counter) VALUES ($1, $2, $3, 1)', [loggedUser, now, now]);
+                        } else {
+                            await client.query('UPDATE users SET lastvisit = $1, counter = counter + 1 WHERE name = $2', [now, loggedUser]);
+                        }
                         const result2 = await client.query("SELECT * FROM users"); 
                         await client.end();
 
